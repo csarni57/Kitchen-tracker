@@ -1,1 +1,216 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#2d7a4f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kitchen Tracker">
+  <title>Kitchen Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+ 
+  <!-- ═══════════════════════════════════════════
+       AUTH SCREEN
+  ════════════════════════════════════════════ -->
+  <div id="auth-screen" style="display:none">
+    <div class="auth-logo">🛒</div>
+    <div class="auth-title" id="auth-title-text">Kitchen Tracker</div>
+    <div class="auth-sub" id="auth-sub-text">
+      Track your fridge &amp; pantry.<br>Sign in to sync across all your devices.
+    </div>
+ 
+    <div class="lang-pick">
+      <button class="lang-btn active" onclick="setLang('en', this)">🇺🇸 English</button>
+      <button class="lang-btn" onclick="setLang('es', this)">🇪🇸 Español</button>
+    </div>
+ 
+    <div class="auth-tabs" style="width:100%">
+      <div class="auth-tab active" id="tab-signin" onclick="switchAuthTab('signin')" data-i18n="signin">Sign In</div>
+      <div class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')" data-i18n="signup">Sign Up</div>
+    </div>
+ 
+    <div style="width:100%">
+      <div class="auth-field" id="name-field" style="display:none">
+        <label data-i18n="household_name">Household Name</label>
+        <input type="text" id="household-name" placeholder="e.g. The Johnson Family" autocomplete="off">
+      </div>
+      <div class="auth-field">
+        <label data-i18n="email">Email</label>
+        <input type="email" id="auth-email" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label data-i18n="password">Password</label>
+        <input type="password" id="auth-password" autocomplete="current-password">
+      </div>
+      <button class="auth-btn" id="auth-submit" onclick="doAuth()" data-i18n="signin">Sign In</button>
+      <div class="auth-error" id="auth-error"></div>
+    </div>
+  </div>
+ 
+  <!-- ═══════════════════════════════════════════
+       MAIN APP
+  ════════════════════════════════════════════ -->
+  <div class="app" id="main-app" style="display:none">
+ 
+    <div class="header">
+      <div class="header-inner">
+        <div>
+          <h1 id="household-title">Kitchen Tracker</h1>
+          <div class="header-sub" id="header-sub-text">Fridge &amp; Pantry Manager</div>
+        </div>
+        <div class="header-right">
+          <button class="icon-btn" onclick="openSettings()" title="Settings">⚙️</button>
+        </div>
+      </div>
+    </div>
+ 
+    <div class="tabs">
+      <div class="tab active" id="tab-fridge" onclick="showTab('fridge')">🧊 <span data-i18n="fridge">Fridge</span></div>
+      <div class="tab" id="tab-pantry" onclick="showTab('pantry')">🥫 <span data-i18n="pantry">Pantry</span></div>
+      <div class="tab" id="tab-alerts" onclick="showTab('alerts')">🔔 <span data-i18n="alerts">Alerts</span></div>
+    </div>
+ 
+    <div id="fridge" class="section active"></div>
+    <div id="pantry" class="section"></div>
+    <div id="alerts" class="section"></div>
+ 
+  </div>
+ 
+  <!-- ═══════════════════════════════════════════
+       ADD / EDIT ITEM MODAL
+  ════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="item-modal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2 id="modal-title">Add item</h2>
+        <button class="close-btn" onclick="closeModal('item-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+ 
+        <div class="field">
+          <label data-i18n="photo">Photo</label>
+          <div class="photo-upload">
+            <input type="file" accept="image/*" capture="environment" id="photo-input" onchange="handlePhoto(this)">
+            <img id="photo-preview" class="photo-preview" alt="">
+            <div id="photo-placeholder">
+              <div style="font-size:32px;margin-bottom:8px">📷</div>
+              <div style="font-size:13px;color:var(--text2);font-weight:500" data-i18n="photo_tap">Tap to take or upload a photo</div>
+            </div>
+          </div>
+        </div>
+ 
+        <div class="field">
+          <label data-i18n="item_name">Item Name</label>
+          <input type="text" id="item-name" autocomplete="off">
+        </div>
+ 
+        <div class="field">
+          <label data-i18n="category">Category</label>
+          <select id="item-category">
+            <option value="dairy">🥛 Dairy</option>
+            <option value="produce">🥦 Produce</option>
+            <option value="meat">🥩 Meat &amp; Seafood</option>
+            <option value="beverages">🧃 Beverages</option>
+            <option value="grains">🌾 Grains &amp; Pasta</option>
+            <option value="canned">🥫 Canned &amp; Jarred</option>
+            <option value="snacks">🍪 Snacks</option>
+            <option value="condiments">🧂 Condiments</option>
+            <option value="other">📦 Other</option>
+          </select>
+        </div>
+ 
+        <div class="field">
+          <label data-i18n="quantity">Quantity</label>
+          <div class="qty-row">
+            <button class="qty-btn" onclick="changeQty(-1)">−</button>
+            <div class="qty-val" id="qty-display">1</div>
+            <button class="qty-btn" onclick="changeQty(1)">+</button>
+            <input id="item-unit" type="text" style="flex:1" autocomplete="off">
+          </div>
+        </div>
+ 
+        <div class="field">
+          <label data-i18n="low_stock_alert">Low Stock Alert</label>
+          <div class="alert-toggle">
+            <div>
+              <div style="font-size:14px;font-weight:600" data-i18n="notify_low">Notify when running low</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px" data-i18n="alert_desc">Alert when quantity drops to threshold</div>
+            </div>
+            <div class="toggle-switch" id="alert-toggle" onclick="toggleAlert()"></div>
+          </div>
+        </div>
+ 
+        <div class="field" id="threshold-field" style="display:none">
+          <label data-i18n="alert_below">Alert when below</label>
+          <div class="qty-row">
+            <button class="qty-btn" onclick="changeThreshold(-1)">−</button>
+            <div class="qty-val" id="threshold-display">2</div>
+            <button class="qty-btn" onclick="changeThreshold(1)">+</button>
+            <span style="font-size:14px;color:var(--text2)" data-i18n="units">units</span>
+          </div>
+        </div>
+ 
+        <div class="field">
+          <label data-i18n="expiry">Expiry Date (optional)</label>
+          <input type="date" id="item-expiry">
+        </div>
+ 
+        <button class="save-btn" onclick="saveItem()" data-i18n="save_item">Save Item</button>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- ═══════════════════════════════════════════
+       SETTINGS MODAL
+  ════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2 data-i18n="settings">Settings</h2>
+        <button class="close-btn" onclick="closeModal('settings-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+ 
+        <div class="settings-row">
+          <div>
+            <div class="settings-label" data-i18n="language">Language</div>
+            <div class="settings-sub" data-i18n="language_sub">Choose your preferred language</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="lang-btn" id="lang-en-btn" onclick="setLangApp('en', this)">🇺🇸 EN</button>
+            <button class="lang-btn" id="lang-es-btn" onclick="setLangApp('es', this)">🇪🇸 ES</button>
+          </div>
+        </div>
+ 
+        <div class="settings-row">
+          <div>
+            <div class="settings-label" data-i18n="account">Account</div>
+            <div class="settings-sub" id="settings-email"></div>
+          </div>
+        </div>
+ 
+        <div class="settings-row">
+          <div>
+            <div class="settings-label" data-i18n="household">Household</div>
+            <div class="settings-sub" id="settings-household"></div>
+          </div>
+        </div>
+ 
+        <button class="signout-btn" onclick="signOut()" data-i18n="sign_out">Sign Out</button>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- ═══════════════════════════════════════════
+       SCRIPTS
+  ════════════════════════════════════════════ -->
+  <script type="module" src="app.js"></script>
+ 
+</body>
+</html>
